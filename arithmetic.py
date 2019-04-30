@@ -1,9 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 
 
 class ArithmeticElement(object):
+  '''
+  Parent of all of the classes below
+  Initializes self.value to whatever is passed to its constructor
+  '''
 
   def __init__(self, *args, **kwargs):
     self.value = None
@@ -23,31 +27,43 @@ class ArithmeticElement(object):
     return None
 
   def __repr__(self):
-    return str(self.value)
+    return "x" + str(self.value)
 
 
 class ArithmeticOperator(ArithmeticElement):
+  '''
+  Parent of all of the arithmetic operation objects
+  Inherits from ArithmeticElement
+  '''
+
+  operators = {}
 
   @staticmethod
   def classify(string):
-    if string == "+":
-      return Plus
-    if string == "-":
-      return Minus
+    if string in ArithmeticOperator.operators:
+      return ArithmeticOperator.operators[string]
     return None
     
   def operate(self, a, b):
     return -1
 
+
 class Plus(ArithmeticOperator):
+  symbol = "+"
 
   def operate(self, a, b):
     return a + b
 
-class Minus(ArithmeticOperator):
 
-  def operate(a, b):
+class Minus(ArithmeticOperator):
+  symbol = "-"
+
+  def operate(self, a, b):
     return a - b
+
+
+for cls in ArithmeticOperator.__subclasses__():
+  ArithmeticOperator.operators[cls.symbol] = cls
 
 
 class ArithmeticData(ArithmeticElement):
@@ -63,6 +79,7 @@ class ArithmeticData(ArithmeticElement):
   @staticmethod
   def matches(string):
     return False
+
 
 class Constant(ArithmeticData):
 
@@ -81,6 +98,7 @@ class Constant(ArithmeticData):
 
     return True
 
+
 class Variable(ArithmeticData):
 
   @staticmethod
@@ -98,8 +116,33 @@ def parseArithmeticExpression(expr):
 
 
 def evaluate(expr):
+  result = 0
+
   parts = parseArithmeticExpression(expr)
-  return parts
+
+  if not parts:
+    print("Error parsing expression {}".format(expr))
+    return result
+
+  if not isinstance(parts[0], ArithmeticData):
+    print("First part of expression {0} is not data: {1}".format(expr, parts[0]))
+    return result
+
+  result = parts.pop(0).value
+
+  while parts:
+    part = parts.pop(0)
+    if isinstance(part, ArithmeticOperator):
+      if not parts:
+        print("Error, last element in expression is operator {0}".format(part))
+        return result
+      if not isinstance(parts[0], ArithmeticData):
+        print("Error, element following operator is not data: {0} {1}".format(part, parts[0]))
+      arg = parts.pop(0).value
+      result = part.operate(result, arg)
+
+  return result
+
 
 def main():
   print(evaluate(sys.argv[1]))
